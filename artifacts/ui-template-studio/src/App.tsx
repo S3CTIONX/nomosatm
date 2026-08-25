@@ -77,8 +77,11 @@ const activityItems = [
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`nomo-logo ${compact ? "nomo-logo-compact" : ""}`} data-testid="brand-nomo">
-      <span className="nomo-mark" aria-hidden="true"><i /><i /><i /></span>
-      {!compact && <span className="nomo-word">NOMO<span className="nomo-dot">.</span></span>}
+      {compact ? (
+        <span className="nomo-mark" aria-hidden="true"><i /><i /><i /></span>
+      ) : (
+        <img className="nomo-logo-image" src="/assets/nomolabs-logo-dark.jpg" alt="NOMO Labs" />
+      )}
     </div>
   );
 }
