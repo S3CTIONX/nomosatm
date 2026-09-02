@@ -1,17 +1,22 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, Route, Switch, useLocation } from "wouter";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { Link, Route as WouterRoute, Switch, useLocation } from "wouter";
 import {
   Activity,
   ArrowRight,
+  ArrowDownUp,
   ArrowUpRight,
   Bell,
   Bot,
   Check,
+  CircleCheck,
+  CircleX,
   ChevronDown,
   ChevronRight,
   CircleHelp,
   Clock3,
+  Clock4,
   Copy,
+  Crosshair,
   Cpu,
   Eye,
   FileText,
@@ -33,23 +38,30 @@ import {
   Plus,
   Radio,
   RefreshCw,
+  Route as RouteIcon,
   Rocket,
+  Search,
   Send,
+  ShieldAlert,
   Settings2,
   ShieldCheck,
   Sparkles,
   Target,
   Terminal,
   TrendingUp,
+  TrendingDown,
   TriangleAlert,
   UserRound,
   X,
 } from "lucide-react";
 
 type IconType = typeof Activity;
+const Route = RouteIcon;
 
 const navItems: { label: string; href: string; icon: IconType; hint: string }[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard, hint: "Live system" },
+  { label: "Signals", href: "/signals", icon: Radio, hint: "Intake & review" },
+  { label: "Execution (Multi-Chain)", href: "/execution", icon: RouteIcon, hint: "Order control" },
   { label: "Onboarding", href: "/onboarding", icon: Rocket, hint: "Setup flow" },
   { label: "Settings", href: "/settings", icon: Settings2, hint: "Preferences" },
   { label: "States", href: "/states", icon: Grid2X2, hint: "UI patterns" },
@@ -225,11 +237,88 @@ function StatesPage() {
   return <div className="page page-enter"><div className="page-heading"><div><span className="kicker">TEMPLATE GALLERY / STATES</span><h1>Every state has a next move.</h1><p>Composed patterns for the moments where data is arriving, absent, or needs a second look.</p></div></div><div className="state-tabs">{stateItems.map(({ key, icon: Icon, label }) => <button className={state === key ? "active" : ""} onClick={() => setState(key)} key={key} data-testid={`button-state-${key}`}><Icon size={15} />{label}</button>)}</div><div className="state-stage surface">{state === "empty" && <div className="state-content"><div className="empty-visual"><Plus size={23} /></div><span className="eyebrow">NO SAVED ROUTES</span><h2>Your signal layer is quiet.</h2><p>When you connect a source, your active routes will appear here with health and execution history.</p><button className="button button-primary" onClick={() => setState("success")} data-testid="button-empty-connect">Connect a source <ArrowRight size={15} /></button></div>}{state === "loading" && <div className="state-content"><div className="loading-visual"><span /><span /><span /></div><span className="eyebrow">SYNCING SYSTEMS</span><h2>Finding the signal.</h2><p>NOMO is checking your connected surfaces. This usually takes a few seconds.</p><div className="skeleton-lines"><i /><i /><i /></div></div>}{state === "success" && <div className="state-content success-content"><div className="success-visual"><Check size={24} /></div><span className="eyebrow">SYNC COMPLETE / 09:42</span><h2>Everything is in position.</h2><p>Your systems are current. The next brief will arrive when there is something worth your attention.</p><div className="success-detail"><span><StatusDot /> 4 systems healthy</span><span><Clock3 size={14} /> Next review in 48m</span></div><button className="button button-outline" onClick={() => setState("empty")} data-testid="button-success-reset">Preview empty state <Grid2X2 size={15} /></button></div>}{state === "error" && <div className="state-content"><div className="error-visual"><TriangleAlert size={24} /></div><span className="eyebrow">ROUTE INTERRUPTED / E-204</span><h2>The handoff needs attention.</h2><p>TradingView did not reach the webhook relay. No order was sent. Your other systems are unaffected.</p><div className="error-detail"><span>Last successful ping</span><strong>09:37:12 UTC</strong></div><div className="state-actions"><button className="button button-primary" onClick={retry} disabled={retrying} data-testid="button-retry-state">{retrying ? <Loader2 className="spin" size={15} /> : <RefreshCw size={15} />} {retrying ? "Retrying..." : "Retry connection"}</button><button className="button button-outline" onClick={() => alert("Support context copied.")} data-testid="button-copy-error"><Copy size={15} /> Copy context</button></div></div>}</div></div>;
 }
 
+type SignalSource = "TradingView" | "AI analysis";
+type Signal = {
+  id: string;
+  source: SignalSource;
+  market: string;
+  title: string;
+  summary: string;
+  time: string;
+  confidence: number;
+  risk: "Low" | "Moderate" | "Elevated";
+  bias: "Bullish" | "Bearish" | "Neutral";
+  timeframe: string;
+  context: string[];
+};
+
+const signalItems: Signal[] = [
+  { id: "sig-104", source: "TradingView", market: "EURUSD", title: "London range reclaim", summary: "Price is holding above the 1.0820 range high after a clean retest.", time: "2 min ago", confidence: 87, risk: "Moderate", bias: "Bullish", timeframe: "15m", context: ["Volume is 1.4× the 20-bar average", "Retest held on the second candle", "Macro calendar: ECB remarks in 46m"] },
+  { id: "sig-103", source: "AI analysis", market: "BTC / USDT", title: "Momentum cooling at resistance", summary: "The model flags a divergence between price expansion and declining momentum.", time: "11 min ago", confidence: 74, risk: "Elevated", bias: "Neutral", timeframe: "1h", context: ["RSI divergence detected across 4 candles", "Liquidity cluster between 68,900–69,200", "Funding remains slightly positive"] },
+  { id: "sig-102", source: "TradingView", market: "XAUUSD", title: "Mean reversion watch", summary: "Gold is stretched from the session VWAP; setup is not confirmed.", time: "24 min ago", confidence: 68, risk: "Moderate", bias: "Bearish", timeframe: "30m", context: ["2.1 standard deviations from VWAP", "US dollar basket is firming", "Wait for a lower-high confirmation"] },
+  { id: "sig-101", source: "AI analysis", market: "SUI / USD", title: "Volatility regime shift", summary: "Range compression suggests a larger move, but direction remains unresolved.", time: "38 min ago", confidence: 61, risk: "Low", bias: "Neutral", timeframe: "4h", context: ["ATR contracted 22% this week", "Open interest is flat", "No action recommended before daily close"] },
+];
+
+function SignalConfidence({ value }: { value: number }) {
+  return <div className="confidence-meter"><span style={{ width: `${value}%` }} /><strong>{value}%</strong></div>;
+}
+
+function SignalsPage() {
+  const [filter, setFilter] = useState<"All" | SignalSource | "High confidence">("All");
+  const [selectedId, setSelectedId] = useState(signalItems[0].id);
+  const [acknowledged, setAcknowledged] = useState<string[]>([]);
+  const [reviewed, setReviewed] = useState<string[]>([]);
+  const [notice, setNotice] = useState("");
+  const selected = signalItems.find((item) => item.id === selectedId) ?? signalItems[0];
+  const visible = signalItems.filter((signal) => filter === "All" || (filter === "High confidence" ? signal.confidence >= 80 : signal.source === filter));
+  const act = (message: string, setter?: (id: string) => void) => {
+    setter?.(selected.id);
+    setNotice(message);
+    window.setTimeout(() => setNotice(""), 2600);
+  };
+  return <div className="page page-enter signals-page">
+    <div className="page-heading"><div><span className="kicker">SIGNALS / INTAKE & REVIEW</span><h1>Signal room</h1><p>Prioritize what deserves a human decision. No routes are executed from this surface.</p></div><div className="heading-actions"><span className="live-readout"><StatusDot /> INTAKE LIVE <small>04 SOURCES</small></span><button className="button button-outline" onClick={() => setNotice("Signal intake refreshed from local sample data.")} data-testid="button-refresh-signals"><RefreshCw size={14} /> Refresh intake</button></div></div>
+    <div className="signal-health surface"><div className="health-lead"><div className="health-icon"><Activity size={17} /></div><div><span className="eyebrow">SIGNAL HEALTH</span><strong>All sources are responding</strong><small>Last local sync 09:42:18 UTC · median latency 184ms</small></div></div><div className="health-stat"><span>In review</span><strong>04</strong></div><div className="health-stat"><span>High confidence</span><strong className="text-cyan">01</strong></div><div className="health-stat"><span>Needs context</span><strong className="text-amber">02</strong></div><div className="health-chart"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div></div>
+    <div className="signals-toolbar"><div className="filter-group signal-filters">{(["All", "TradingView", "AI analysis", "High confidence"] as const).map((item) => <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)} data-testid={`button-signal-filter-${item.toLowerCase().replaceAll(" ", "-")}`}>{item}</button>)}</div><div className="stream-meta"><span><span className="status-dot" /> Ordered by confidence</span><span>Updated moments ago</span></div></div>
+    <div className="signals-layout">
+      <section className="signal-stream surface"><div className="section-head"><div><span className="eyebrow">PRIORITIZED STREAM</span><h2>Incoming signals <span className="count-badge">{visible.length}</span></h2></div><button className="icon-button" aria-label="Search signals" onClick={() => setNotice("Search is ready for API wiring.")} data-testid="button-search-signals"><Search size={16} /></button></div><div className="signal-list">{visible.map((signal) => <button className={`signal-row ${selected.id === signal.id ? "selected" : ""}`} onClick={() => setSelectedId(signal.id)} key={signal.id} data-testid={`button-select-signal-${signal.id}`}><div className={`source-glyph ${signal.source === "TradingView" ? "tv" : "ai"}`}>{signal.source === "TradingView" ? <TrendingUp size={15} /> : <Bot size={15} />}</div><div className="signal-copy"><div className="signal-row-top"><span>{signal.source}</span><time>{signal.time}</time></div><strong>{signal.market} · {signal.title}</strong><small>{signal.summary}</small><div className="signal-row-foot"><span className={`bias bias-${signal.bias.toLowerCase()}`}>{signal.bias}</span><span>{signal.timeframe}</span><span className={`risk risk-${signal.risk.toLowerCase()}`}>{signal.risk} risk</span></div></div><div className="signal-confidence"><span>CONF.</span><strong>{signal.confidence}</strong><small>/ 100</small></div></button>)}</div>{visible.length === 0 && <div className="empty-stream"><Radio size={20} /><strong>No signals match this view.</strong><span>Try another source filter.</span></div>}</section>
+      <aside className="signal-detail surface"><div className="detail-top"><div><span className="eyebrow">SIGNAL DETAIL / {selected.id.toUpperCase()}</span><h2>{selected.market}</h2></div><span className={`detail-source ${selected.source === "TradingView" ? "tv" : "ai"}`}>{selected.source === "TradingView" ? <TrendingUp size={13} /> : <Bot size={13} />} {selected.source}</span></div><div className="detail-title"><h3>{selected.title}</h3><p>{selected.summary}</p></div><div className="detail-metrics"><div><span>Confidence</span><SignalConfidence value={selected.confidence} /></div><div><span>Risk posture</span><strong className={`risk risk-${selected.risk.toLowerCase()}`}>{selected.risk}</strong></div><div><span>Signal bias</span><strong className={`bias bias-${selected.bias.toLowerCase()}`}>{selected.bias}</strong></div></div><div className="context-block"><div className="detail-label"><Crosshair size={13} /> Context considered</div><ul>{selected.context.map((item) => <li key={item}><span />{item}</li>)}</ul></div><div className="review-note"><ShieldAlert size={15} /><div><strong>Human review required</strong><span>Context is simulated. Acknowledge only after checking your own market view.</span></div></div><div className="detail-actions"><button className={`button ${acknowledged.includes(selected.id) ? "button-confirmed" : "button-primary"}`} onClick={() => act(acknowledged.includes(selected.id) ? "Signal already acknowledged." : `${selected.market} acknowledged for review.`, (id) => setAcknowledged((items) => items.includes(id) ? items : [...items, id]))} data-testid="button-acknowledge-signal">{acknowledged.includes(selected.id) ? <CircleCheck size={15} /> : <Check size={15} />} {acknowledged.includes(selected.id) ? "Acknowledged" : "Acknowledge signal"}</button><button className="button button-outline" onClick={() => act(reviewed.includes(selected.id) ? "Review status already recorded." : `${selected.market} marked reviewed.`, (id) => setReviewed((items) => items.includes(id) ? items : [...items, id]))} data-testid="button-mark-signal-reviewed">{reviewed.includes(selected.id) ? <CircleCheck size={15} /> : <Eye size={15} />} {reviewed.includes(selected.id) ? "Reviewed" : "Mark reviewed"}</button><button className="icon-button detail-more" aria-label="Escalate signal" onClick={() => act(`${selected.market} flagged for deeper context.`)} data-testid="button-escalate-signal"><MoreHorizontal size={16} /></button></div>{notice && <div className="inline-notice" role="status" data-testid="status-signal-action"><Check size={14} />{notice}</div>}</aside>
+    </div>
+  </div>;
+}
+
+type ExecutionStatus = "Success" | "Pending" | "Failed";
+const executionHistory = [
+  { id: "ord-884", pair: "EURUSD", side: "Buy", amount: "2,400 USDC", route: "Arbitrum → MetaTrader 5", time: "Today, 09:36", status: "Success" as ExecutionStatus },
+  { id: "ord-883", pair: "BTC / USDT", side: "Sell", amount: "0.018 BTC", route: "Ethereum → Prime broker", time: "Today, 08:54", status: "Pending" as ExecutionStatus },
+  { id: "ord-882", pair: "SUI / USDC", side: "Buy", amount: "1,000 USDC", route: "Sui → Cetus", time: "Yesterday, 18:22", status: "Failed" as ExecutionStatus },
+];
+
+function ExecutionPage() {
+  const [route, setRoute] = useState("Arbitrum → MetaTrader 5");
+  const [side, setSide] = useState<"Buy" | "Sell">("Buy");
+  const [amount, setAmount] = useState("2400");
+  const [riskControls, setRiskControls] = useState({ maxSlippage: true, confirmation: true, sizeLimit: true });
+  const [confirmed, setConfirmed] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<"All" | ExecutionStatus>("All");
+  const [notice, setNotice] = useState("");
+  const toggleRisk = (key: keyof typeof riskControls) => setRiskControls((current) => ({ ...current, [key]: !current[key] }));
+  const submitOrder = (event: FormEvent) => { event.preventDefault(); setConfirmed(true); setNotice(`${side} order queued in paper mode. No funds moved.`); window.setTimeout(() => setNotice(""), 3500); };
+  const history = executionHistory.filter((item) => historyFilter === "All" || item.status === historyFilter);
+  return <div className="page page-enter execution-page">
+    <div className="page-heading"><div><span className="kicker">EXECUTION / MULTI-CHAIN</span><h1>Execution desk</h1><p>Review routes, guardrails, and simulated orders before a real API handoff.</p></div><div className="heading-actions"><span className="paper-badge"><span className="status-dot" /> PAPER MODE</span><button className="button button-outline" onClick={() => setNotice("Route health refreshed from local sample data.")} data-testid="button-refresh-routes"><RefreshCw size={14} /> Refresh routes</button></div></div>
+    <div className="execution-kpis"><div className="exec-kpi surface"><span className="eyebrow">EXECUTION READINESS</span><strong className="text-cyan">READY</strong><small>3 of 3 guardrails passing</small><div className="kpi-line"><span style={{ width: "92%" }} /></div></div><div className="exec-kpi surface"><span className="eyebrow">CONNECTED ROUTES</span><strong>03</strong><small>Across 3 networks</small><div className="route-mini"><i /><i /><i /></div></div><div className="exec-kpi surface"><span className="eyebrow">OPEN EXPOSURE</span><strong>$8,412.80</strong><small className="positive"><TrendingUp size={12} /> +1.84% today</small></div><div className="exec-kpi surface"><span className="eyebrow">LAST CHECK</span><strong>09:42:18</strong><small>All systems nominal</small><div className="latency-readout"><Activity size={12} /> 184ms median</div></div></div>
+    <div className="execution-top-grid"><section className="routes-panel surface"><div className="section-head"><div><span className="eyebrow">CONNECTED ROUTES</span><h2>Choose a controlled path</h2></div><button className="text-action" onClick={() => setNotice("Route manager is ready for API wiring.")} data-testid="button-manage-execution-routes">Manage routes <ArrowRight size={13} /></button></div><div className="execution-route-list">{[["Arbitrum → MetaTrader 5", "EURUSD · Paper relay", "Ready", "blue"], ["Ethereum → Prime broker", "BTC / USDT · Review required", "Review", "amber"], ["Sui → Cetus", "SUI / USDC · Connected", "Ready", "cyan"]].map(([name, detail, state, color]) => <button className={`execution-route ${route === name ? "selected" : ""}`} key={name} onClick={() => { setRoute(name); setConfirmed(false); }} data-testid={`button-select-route-${name.split(" ")[0].toLowerCase()}`}><span className={`route-logo route-${color}`}><Route size={15} /></span><span><strong>{name}</strong><small>{detail}</small></span><span className={`route-pill route-pill-${color}`}>{state}</span>{route === name && <CircleCheck size={15} className="route-selected" />}</button>)}</div></section><section className="guardrails-panel surface"><div className="section-head"><div><span className="eyebrow">RISK GUARDRAILS</span><h2>Before any handoff</h2></div><ShieldCheck size={17} className="text-cyan" /></div><div className="guardrail-list"><label><span><strong>Max slippage</strong><small>Keep execution under 0.50%</small></span><button className={`switch ${riskControls.maxSlippage ? "on" : ""}`} onClick={() => toggleRisk("maxSlippage")} role="switch" aria-checked={riskControls.maxSlippage} data-testid="toggle-max-slippage"><span /></button></label><label><span><strong>Human confirmation</strong><small>Ask before submitting every order</small></span><button className={`switch ${riskControls.confirmation ? "on" : ""}`} onClick={() => toggleRisk("confirmation")} role="switch" aria-checked={riskControls.confirmation} data-testid="toggle-human-confirmation"><span /></button></label><label><span><strong>Position size limit</strong><small>Cap new exposure at 5% of balance</small></span><button className={`switch ${riskControls.sizeLimit ? "on" : ""}`} onClick={() => toggleRisk("sizeLimit")} role="switch" aria-checked={riskControls.sizeLimit} data-testid="toggle-position-size-limit"><span /></button></label></div></section></div>
+    <div className="execution-main-grid"><section className="order-ticket surface"><div className="ticket-head"><div><span className="eyebrow">ORDER TICKET / SIMULATED</span><h2>Prepare a handoff</h2></div><span className="ticket-id">TICKET / NEW</span></div><form onSubmit={submitOrder}><div className="field-label">Selected route</div><div className="ticket-route"><Route size={15} /><span>{route}</span><ChevronDown size={14} /></div><div className="side-control"><span className="field-label">Order side</span><div className="side-buttons"><button type="button" className={side === "Buy" ? "active buy" : ""} onClick={() => setSide("Buy")} data-testid="button-order-buy"><TrendingUp size={14} /> Buy</button><button type="button" className={side === "Sell" ? "active sell" : ""} onClick={() => setSide("Sell")} data-testid="button-order-sell"><TrendingDown size={14} /> Sell</button></div></div><div className="ticket-fields"><label><span>Market</span><select defaultValue="EURUSD" data-testid="select-order-market"><option>EURUSD</option><option>BTC / USDT</option><option>SUI / USDC</option></select></label><label><span>Amount <small>USDC</small></span><input type="number" min="1" value={amount} onChange={(event) => { setAmount(event.target.value); setConfirmed(false); }} data-testid="input-order-amount" /></label></div><div className="ticket-summary"><span>Estimated notional <strong>${Number(amount || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</strong></span><span>Max slippage <strong>{riskControls.maxSlippage ? "0.50%" : "Not set"}</strong></span><span>Fee estimate <strong>$1.84</strong></span></div><button className="button button-primary ticket-submit" type="submit" disabled={!amount || Number(amount) <= 0} data-testid="button-submit-order">{confirmed ? <CircleCheck size={15} /> : <ArrowDownUp size={15} />} {confirmed ? "Order queued in paper mode" : `Review ${side.toLowerCase()} order`} <ArrowRight size={14} /></button></form>{notice && <div className="inline-notice" role="status" data-testid="status-execution-action"><Check size={14} /> {notice}</div>}</section><section className="open-trades surface"><div className="section-head"><div><span className="eyebrow">OPEN TRADES</span><h2>Exposure now</h2></div><span className="text-action">3 positions</span></div><div className="trade-table"><div className="table-head"><span>PAIR</span><span>SIZE</span><span>PNL</span></div>{[["EURUSD", "2,400", "+$42.18", "positive"], ["BTC / USDT", "0.018", "+$86.40", "positive"], ["SUI / USDC", "1,000", "−$12.62", "negative"]].map(([pair, size, pnl, tone]) => <div className="trade-row" key={pair}><span><strong>{pair}</strong><small>{pair === "EURUSD" ? "Long · 1.0824" : pair === "BTC / USDT" ? "Short · 69,180" : "Long · 1.14"}</small></span><strong>{size}</strong><strong className={tone}>{pnl}</strong></div>)}</div><button className="under-link" onClick={() => setNotice("Open trade management is ready for API wiring.")} data-testid="button-view-open-trades">View open trade detail <ArrowRight size={13} /></button></section></div>
+    <section className="execution-history surface"><div className="section-head"><div><span className="eyebrow">EXECUTION HISTORY</span><h2>Recent handoffs</h2></div><div className="filter-group history-filters">{(["All", "Success", "Pending", "Failed"] as const).map((item) => <button key={item} className={historyFilter === item ? "active" : ""} onClick={() => setHistoryFilter(item)} data-testid={`button-history-filter-${item.toLowerCase()}`}>{item}</button>)}</div></div><div className="history-table"><div className="history-head"><span>ORDER</span><span>ROUTE</span><span>TIME</span><span>STATUS</span></div>{history.map((item) => <div className="history-row" key={item.id}><span><strong>{item.pair} · {item.side}</strong><small>{item.amount} · {item.id}</small></span><span>{item.route}</span><span>{item.time}</span><span className={`history-status history-${item.status.toLowerCase()}`}>{item.status === "Success" ? <CircleCheck size={13} /> : item.status === "Pending" ? <Clock4 size={13} /> : <CircleX size={13} />} {item.status}</span></div>)}</div>{history.length === 0 && <div className="empty-stream">No execution records in this view.</div>}</section>
+  </div>;
+}
+
 function NotFound() { return <div className="not-found"><Logo /><h1>Signal not found.</h1><p>This route is outside the current command center.</p><Link href="/dashboard" className="button button-primary" data-testid="link-not-found-dashboard">Return to dashboard <ArrowRight size={15} /></Link></div>; }
 
 function App() {
   useEffect(() => { document.documentElement.classList.add("dark"); document.body.classList.add("grain"); return () => document.documentElement.classList.remove("dark"); }, []);
-  return <Switch><Route path="/" component={LandingPage} /><Route path="/dashboard"><AppShell><DashboardPage /></AppShell></Route><Route path="/onboarding"><AppShell><OnboardingPage /></AppShell></Route><Route path="/settings"><AppShell><SettingsPage /></AppShell></Route><Route path="/states"><AppShell><StatesPage /></AppShell></Route><Route component={NotFound} /></Switch>;
+  return <Switch><WouterRoute path="/" component={LandingPage} /><WouterRoute path="/dashboard"><AppShell><DashboardPage /></AppShell></WouterRoute><WouterRoute path="/signals"><AppShell><SignalsPage /></AppShell></WouterRoute><WouterRoute path="/execution"><AppShell><ExecutionPage /></AppShell></WouterRoute><WouterRoute path="/onboarding"><AppShell><OnboardingPage /></AppShell></WouterRoute><WouterRoute path="/settings"><AppShell><SettingsPage /></AppShell></WouterRoute><WouterRoute path="/states"><AppShell><StatesPage /></AppShell></WouterRoute><WouterRoute component={NotFound} /></Switch>;
 }
 
 export default App;
