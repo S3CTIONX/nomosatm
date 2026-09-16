@@ -1,1 +1,0 @@
-- [NOMO product direction](nomo-product-direction.md) — Dark quant-finance control center combining productivity, trading automation, Sui assets, and Lwazi.
