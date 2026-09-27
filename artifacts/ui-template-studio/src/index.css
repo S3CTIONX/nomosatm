@@ -12,8 +12,8 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
+    --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));  
   --color-card-border: hsl(var(--card-border));
 
   --color-popover: hsl(var(--popover));
@@ -582,6 +582,7 @@ a { color: inherit; text-decoration: none; }
 .app-frame .side-link-active { background: linear-gradient(90deg, rgba(55, 121, 226, .22), rgba(55, 121, 226, .05)); box-shadow: inset 2px 0 #4d96ff; }
 .app-frame .side-link-active svg { color: #63b5ff; }
 
+<<<<<<< HEAD
 /* NOMO redesign surfaces: portfolio-first overview, model command, and Lwazi. */
 .overview-page { max-width: 1360px; }
 .overview-hero { padding: 28px 30px 22px; background: radial-gradient(circle at 88% 12%, rgba(45, 130, 230, .17), transparent 28%), linear-gradient(135deg, rgba(11, 39, 79, .98), rgba(7, 25, 56, .98)); }
@@ -612,3 +613,11 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 700px) {
   .overview-hero { padding: 21px 16px 16px; }.overview-hero-top { display: block; }.portfolio-status { margin-top: 18px; }.net-worth-value { font-size: 50px; }.balance-stats { overflow-x: auto; }.balance-stats div { min-width: 130px; padding-right: 20px; margin-right: 20px; }.overview-chart-head { display: block; }.overview-chart-head .timeframe-tabs { margin-top: 13px; width: max-content; }.overview-stat-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 17px; }.overview-stat-strip div { padding: 0; border: 0; }.overview-trade-row { grid-template-columns: 32px 1fr 67px 64px; gap: 8px; }.overview-trade-row time { display: none; }.overview-trade-row .muted-icon { display: none; }.command-readout { margin-top: 16px; width: max-content; }.command-kpi-grid { grid-template-columns: 1fr; }.command-kpi:last-child { grid-column: auto; }.reasoning-head { display: block; }.reasoning-controls { justify-items: start; margin-top: 15px; }.reasoning-chart { height: 285px; }.reasoning-chart svg { height: 240px; }.model-legend { gap: 10px; }.model-note { width: 100%; margin-left: 0; }.command-footer-grid, .lwazi-content-grid { grid-template-columns: 1fr; }.lwazi-hero { grid-template-columns: 1fr; text-align: left; }.lwazi-hero-glyph { width: 90px; height: 90px; }.lwazi-hero-meta { grid-column: auto; }.info-hero { grid-template-columns: 1fr; padding-top: 10px; }.info-orbit { width: 190px; height: 190px; margin: auto; }.info-grid { grid-template-columns: 1fr; }.info-block:last-child { grid-column: auto; }.info-footer { display: grid; gap: 12px; }.info-footer span:nth-child(2) { margin: 0; }.signals-toolbar { overflow-x: auto; padding-bottom: 4px; }.signal-filters { flex-wrap: nowrap; min-width: max-content; }.threshold-label { margin-left: 4px; }.actionable-select { padding: 13px 11px 10px; gap: 8px; }.actionable-confidence { flex-basis: 77px; }.actionable-confidence strong { font-size: 16px; }.actionable-logic { padding-left: 11px; margin: 0 11px; }.actionable-logic p { min-width: 100%; order: 2; }.actionable-logic .card-actions { margin-left: 0; order: 3; }.no-setup-banner { display: block; }.no-setup-banner>span { display: block; margin-top: 14px; }.signal-detail { padding: 17px; }
 }
+
+@layer base {
+  html {
+    font-size: 18px;
+  }
+}
+
+
