@@ -1,0 +1,111 @@
+Updated version:
+
+# NOMO App — Front-End Redesign Spec (v1)
+
+Status: pre-dev, based on walkthrough review + confirmed design decisions.
+Theme: dark, minimal, futuristic, institutional (NOMOLABS colors/fonts throughout — no exceptions, including on re-skinned reference pages).
+
+---
+
+## 1. Overview / Dashboard
+
+**Hero section** (replaces current top of Overview — ref: pics 01/02)
+- One primary metric: net worth, large type
+- Inline sub-stats directly under it: balance / invested / profit
+- One chart, timeframe tabs (1D / 1W / 1M / ALL)
+- Trades list below the chart
+
+**Stat strip** (replaces the 4-box grid — ref: pic 03, confirmed as the layout to retire)
+- Single horizontal block, hairline separators between values, no individual card borders
+- Only shows: portfolio value, and whatever 1–2 top-line numbers matter most at a glance
+- Focus score / Trade routes / Decision debt move OFF this page entirely — see Section 2
+
+**Cut from this page:**
+- "System pulse" section — removed, no replacement
+- Countdown timer — removed (confirmed template leftover)
+
+**Unchanged:** Webhook/MT5 connection management stays in Settings → Webhooks & API, not on Overview.
+
+---
+
+## 2. Command Page
+
+Houses the diagnostic/meta metrics pulled off the dashboard, **plus the model reasoning chart** (placement confirmed here):
+- Focus score (trend view, last 7 days)
+- Trade routes (status: X of Y needing attention)
+- Decision debt (trend, since last review)
+- Model reasoning chart (global, not per-signal)
+
+Rationale: these are self-monitoring and model-transparency views, not trading decisions. Mixing them into Overview or Signals dilutes both. This page is where Zeifa/team check their own process discipline and see what the model is doing, in one place.
+
+---
+
+## 3. Chart — Model Reasoning Layer
+
+**Scope:** an explainability surface, not a manual trading terminal.
+
+- Bigger candlestick view than the current app, standard indicators (MA, volume, etc.)
+- Annotation/drawing layer is **SATM-authored only** — the model marks its own entries, exits, invalidation levels, and structure calls to show its reasoning
+- **No** user-facing drawing tools, no order book, no depth chart, no manual annotation
+- **Placement — confirmed:** Command page (global view), not per-signal.
+
+---
+
+## 4. Signals Page
+
+**Three-state signal card system** (replaces current always-render-a-card behavior):
+
+| State | Trigger | Presentation |
+|---|---|---|
+| Actionable | Confidence ≥ threshold | Full card: bias, confidence %, risk flag, entry logic, Acknowledge/Mark reviewed buttons |
+| Monitoring | Confidence < threshold | Collapsed single line: asset name, "Monitoring — below confidence threshold," last-updated time. No action buttons. Neutral grey — never red/amber/green. |
+| No valid setup | Nothing clears threshold this session | System-level banner replaces the feed: "No valid trade setup — [reason: low volatility / data gap / outside session]." Never an empty/blank feed. |
+
+**Sort order:** actionable cards on top → collapsed "N monitoring" expandable row beneath → no-setup banner overrides the whole feed when it applies.
+
+---
+
+## 5. Lwazi (rebrand — was "Ask Gemini" tab)
+
+- **Placement — confirmed:** dedicated tab.
+- **Backend — confirmed:** experimental, provider-agnostic. Not locked to one model — build the insight-generation layer with an abstracted model-call interface so the underlying LLM can be swapped/selected without a UI or logic rewrite.
+- Function: studies user data/habits on the app, surfaces short insights aimed at more effective trades.
+- Branding: Lwazi voice/persona throughout — no generic "AI assistant" labeling.
+
+---
+
+## 6. Wallet
+
+- Reference: Trantor wallet template (pic 07) — structure only, not colors
+- **Must** be fully re-themed to NOMOLABS colors/fonts/dark UI
+- Functions: NOMO token balance, transfer/receive, transaction history, balance chart
+- Purpose: hold/earn NOMO tokens, transact within the app
+
+---
+
+## 7. Prediction Markets — Post-MVP / Out of Scope
+
+- Reference: Polymarket-style market list + position interface, for later
+- **Deferred.** Not part of this build cycle. No design or dev time here until it resurfaces.
+
+---
+
+## 8. Site / Platform Info Page
+
+- Footer-level page: socials, contact info, docs/links
+- Lowest lift item on this entire spec
+
+---
+
+## Build Sequence (MVP)
+
+1. Site/platform info page
+2. Dashboard consolidation (hero section, stat strip, cut system pulse + timer)
+3. Signal card three-state system
+4. Command page (metrics + model reasoning chart)
+5. Lwazi tab (provider-agnostic backend, rebrand)
+6. Wallet
+
+Prediction markets excluded from this sequence — post-MVP.
+
+**Reasoning for this order:** items 1–4 ship the core trading loop (dashboard, signals, model transparency) — where SATM's actual edge lives. Lwazi and Wallet follow once that core is solid.
